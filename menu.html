@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>เมนูอาหาร Future Snooker</title>
+
+<style>
+body{font-family:Arial,sans-serif;background:#111;color:white;padding:20px;}
+h1{text-align:center;color:#00ff99;}
+.bill-box,.menu-box,.cart-box{background:#222;padding:15px;margin:15px auto;border-radius:15px;max-width:700px;}
+.category{color:#00ff99;margin-top:25px;}
+.item{background:#333;padding:12px;margin:8px 0;border-radius:10px;}
+.item-row{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.qty-control{display:flex;align-items:center;gap:8px;}
+button{border:none;border-radius:8px;padding:8px 12px;color:white;cursor:pointer;font-size:16px;}
+.plus-btn{background:#00c853;}
+.minus-btn{background:#e53935;}
+.delete-btn{background:#ff5722;}
+.send-btn{background:#00c853;width:100%;padding:15px;font-size:20px;margin-top:15px;}
+.call-btn{background:#ff9800;width:100%;padding:15px;font-size:20px;margin-top:10px;}
+.back-btn{background:#555;width:100%;margin-top:10px;}
+.note-input{width:100%;box-sizing:border-box;margin-top:4px;padding:6px;border-radius:6px;border:none;font-size:12px;height:28px;background:#444;color:white;}
+.note-input::placeholder{color:#bbb;}
+.cart-item{border-bottom:1px solid #555;padding:10px 0;}
+.cart-top{display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.small-text{color:#ccc;font-size:14px;margin-top:5px;}
+.qty-number{min-width:25px;text-align:center;font-weight:bold;}
+</style>
+</head>
+
+<body>
+
+<h1>🎱 Future Snooker</h1>
+
+<div class="bill-box">
+    <h2 id="billTitle">กำลังโหลด...</h2>
+</div>
+
+<div class="menu-box" id="menuBox"></div>
+
+<div class="cart-box">
+    <h2>🧾 รายการสั่ง</h2>
+    <div id="cartList">ยังไม่มีรายการ</div>
+    <h2 id="totalText">รวม 0 บาท</h2>
+
+    <button class="send-btn" onclick="sendOrder()">ส่งออเดอร์</button>
+    <button class="call-btn" onclick="callStaff()">🔔 เรียกพนักงาน</button>
+    <button class="back-btn" onclick="goBack()">กลับไปเลือกบิล</button>
+</div>
+
+<script>
+let billType = localStorage.getItem("billType");
+let tableNumber = localStorage.getItem("tableNumber");
+let billName = localStorage.getItem("billName");
+
+let menus = JSON.parse(localStorage.getItem("menus")) || [
+    {name:"ข้าวผัดหมู", price:70, category:"อาหารตามสั่ง"},
+    {name:"กะเพราหมู", price:70, category:"อาหารตามสั่ง"},
+    {name:"กะเพราไก่", price:70, category:"อาหารตามสั่ง"},
+    {name:"ไข่ดาว", price:15, category:"อาหารตามสั่ง"},
+    {name:"เฟรนช์ฟรายส์", price:49, category:"ของทานเล่น"},
+    {name:"นักเก็ตไก่", price:49, category:"ของทานเล่น"},
+    {name:"โค้ก", price:25, category:"เครื่องดื่ม"},
+    {name:"น้ำเปล่า", price:15, category:"เครื่องดื่ม"}
+];
+
+let cart = {};
+let totalPrice = 0;
+
+if(billType === "table"){
+    document.getElementById("billTitle").innerHTML = "โต๊ะ " + tableNumber;
+}else if(billType === "person"){
+    document.getElementById("billTitle").innerHTML = "บิลบุคคล : " + billName;
+}else{
+    alert("กรุณาเลือกโต๊ะหรือชื่อบิลก่อน");
+    window.location.href = "index.html";
+}
+
+function safeId(text){
+    return text.replaceAll(" ","_");
+}
+
+function renderMenu(){
+    let menuBox = document.getElementById("menuBox");
+    let categories = ["อาหารตามสั่ง","ของทานเล่น","เครื่องดื่ม"];
+    let html = "";
+
+    categories.forEach(function(category){
+        let items = menus.filter(menu => menu.category === category);
+
+        if(items.length > 0){
+            html += `<h2 class="category">${category}</h2>`;
+
+            items.forEach(function(menu){
+                let id = safeId(menu.name);
+
+                html += `
+                <div class="item">
+                    <div class="item-row">
+                        <span>${menu.name} ${menu.price} บาท</span>
+                        <div class="qty-control">
+                            <button class="minus-btn" onclick="changeItem('${menu.name}',${menu.price},-1)">-</button>
+                            <span class="qty-number" id="qty-${id}">0</span>
+                            <button class="plus-btn" onclick="changeItem('${menu.name}',${menu.price},1)">+</button>
+                        </div>
+                    </div>
+                    <input class="note-input" id="note-${id}" placeholder="ไม่ใส่ผัก, ไม่เผ็ด, ใส่กล่อง">
+                </div>
+                `;
+            });
+        }
+    });
+
+    menuBox.innerHTML = html;
+}
+
+function changeItem(name, price, amount){
+    if(!cart[name]){
+        cart[name] = {qty:0, price:price};
+    }
+
+    cart[name].qty += amount;
+
+    if(cart[name].qty <= 0){
+        delete cart[name];
+    }
+
+    calculateTotal();
+    renderCart();
+    updateMenuQty(name);
+}
+
+function updateMenuQty(name){
+    let id = safeId(name);
+    let qty = cart[name] ? cart[name].qty : 0;
+    let qtyEl = document.getElementById("qty-" + id);
+
+    if(qtyEl){
+        qtyEl.innerHTML = qty;
+    }
+}
+
+function deleteItem(name){
+    delete cart[name];
+    calculateTotal();
+    renderCart();
+    updateMenuQty(name);
+}
+
+function clearOrder(){
+    cart = {};
+    totalPrice = 0;
+
+    document.querySelectorAll("[id^='qty-']").forEach(el => el.innerHTML = "0");
+    document.querySelectorAll(".note-input").forEach(el => el.value = "");
+
+    renderCart();
+}
+
+function calculateTotal(){
+    totalPrice = 0;
+
+    for(let name in cart){
+        totalPrice += cart[name].qty * cart[name].price;
+    }
+}
+
+function renderCart(){
+    const cartList = document.getElementById("cartList");
+
+    if(Object.keys(cart).length === 0){
+        cartList.innerHTML = "ยังไม่มีรายการ";
+        document.getElementById("totalText").innerHTML = "รวม 0 บาท";
+        return;
+    }
+
+    let html = "";
+
+    for(let name in cart){
+        let id = safeId(name);
+        let noteInput = document.getElementById("note-" + id);
+        let note = noteInput ? noteInput.value.trim() : "";
+
+        html += `
+        <div class="cart-item">
+            <div class="cart-top">
+                <span>${name} x${cart[name].qty}</span>
+                <span>${cart[name].qty * cart[name].price} บาท</span>
+            </div>
+
+            ${note ? `<div class="small-text">หมายเหตุ: ${note}</div>` : ""}
+
+            <div style="margin-top:8px;">
+                <button class="minus-btn" onclick="changeItem('${name}',${cart[name].price},-1)">-</button>
+                <button class="plus-btn" onclick="changeItem('${name}',${cart[name].price},1)">+</button>
+                <button class="delete-btn" onclick="deleteItem('${name}')">ลบเมนูนี้</button>
+            </div>
+        </div>
+        `;
+    }
+
+    cartList.innerHTML = html;
+    document.getElementById("totalText").innerHTML = "รวม " + totalPrice + " บาท";
+}
+
+function getBillText(){
+    if(billType === "table"){
+        return "โต๊ะ " + tableNumber;
+    }else{
+        return "บิลบุคคล : " + billName;
+    }
+}
+
+async function sendOrder(){
+    if(Object.keys(cart).length === 0){
+        alert("กรุณาเลือกรายการก่อน");
+        return;
+    }
+
+    let detail = "";
+
+    for(let name in cart){
+        let id = safeId(name);
+        let noteInput = document.getElementById("note-" + id);
+        let note = noteInput ? noteInput.value.trim() : "";
+
+        detail += "- " + name + " x" + cart[name].qty;
+        detail += " = " + (cart[name].qty * cart[name].price) + " บาท\n";
+
+        if(note !== ""){
+            detail += "  หมายเหตุ: " + note + "\n";
+        }
+    }
+
+   let message = "━━━━━━━━━━━━\n";
+message += "🎱 Future Snooker\n";
+message += "━━━━━━━━━━━━\n\n";
+
+message += "🪑 " + getBillText() + "\n\n";
+
+for(let name in cart){
+
+    let id = safeId(name);
+    let noteInput = document.getElementById("note-" + id);
+    let note = noteInput ? noteInput.value.trim() : "";
+
+    let icon = "🍛";
+
+    let menuData = menus.find(m => m.name === name);
+
+    if(menuData){
+        if(menuData.category === "เครื่องดื่ม"){
+            icon = "🥤";
+        }
+
+        if(menuData.category === "ของทานเล่น"){
+            icon = "🍟";
+        }
+    }
+
+    message += `${icon} ${name} x${cart[name].qty}\n`;
+
+    if(note !== ""){
+        message += `📝 ${note}\n`;
+    }
+}
+
+message += "\n━━━━━━━━━━━━\n";
+message += `💰 รวม ${totalPrice} บาท\n`;
+
+message +=
+    "⏰ " +
+    new Date().toLocaleTimeString("th-TH", {
+        hour: "2-digit",
+        minute: "2-digit"
+    });
+
+message += "\n━━━━━━━━━━━━";
+
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+
+    orders.unshift({
+        bill:getBillText(),
+        detail:detail,
+        total:totalPrice,
+        time:new Date().toLocaleTimeString("th-TH"),
+        done:false
+    });
+
+    localStorage.setItem("orders", JSON.stringify(orders));
+
+    try{
+        const response = await fetch("http://localhost:3000/send-line", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                message: message
+            })
+        });
+
+        const result = await response.json();
+
+        if(result.success){
+            alert("✅ ส่งออเดอร์เรียบร้อย");
+            clearOrder();
+        }else{
+            alert("บันทึกออเดอร์แล้ว แต่ส่งเข้า LINE ไม่สำเร็จ");
+        }
+
+    }catch(error){
+        console.log(error);
+        alert("บันทึกออเดอร์แล้ว แต่เชื่อมต่อ Server ไม่ได้");
+    }
+}
+
+function callStaff(){
+    alert("🔔 เรียกพนักงาน\n\n" + getBillText());
+}
+
+function goBack(){
+    window.location.href = "index.html";
+}
+
+renderMenu();
+</script>
+
+</body>
+</html>

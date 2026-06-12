@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Future Snooker</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:white;
+    text-align:center;
+    padding:20px;
+}
+
+h1{
+    color:#00ff99;
+}
+
+.section{
+    background:#222;
+    padding:20px;
+    margin:20px auto;
+    border-radius:15px;
+    max-width:600px;
+}
+
+.table-grid{
+    display:grid;
+    grid-template-columns:repeat(3,1fr);
+    gap:10px;
+    margin-top:15px;
+}
+
+.table-btn{
+    background:#00c853;
+    color:white;
+    border:none;
+    padding:20px;
+    font-size:20px;
+    border-radius:10px;
+    cursor:pointer;
+}
+
+.table-btn:hover{
+    background:#00a844;
+}
+
+input{
+    width:80%;
+    padding:12px;
+    font-size:18px;
+    border-radius:10px;
+    border:none;
+    margin-top:10px;
+}
+
+.start-btn{
+    margin-top:15px;
+    background:#2196f3;
+    color:white;
+    border:none;
+    padding:15px 30px;
+    font-size:18px;
+    border-radius:10px;
+    cursor:pointer;
+}
+</style>
+
+</head>
+<body>
+
+<h1>🎱 Future Snooker</h1>
+
+<div class="section">
+
+<h2>บิลลงโต๊ะ</h2>
+
+<div class="table-grid">
+<button class="table-btn" onclick="selectTable(1)">โต๊ะ 1</button>
+<button class="table-btn" onclick="selectTable(2)">โต๊ะ 2</button>
+<button class="table-btn" onclick="selectTable(3)">โต๊ะ 3</button>
+<button class="table-btn" onclick="selectTable(4)">โต๊ะ 4</button>
+<button class="table-btn" onclick="selectTable(5)">โต๊ะ 5</button>
+<button class="table-btn" onclick="selectTable(6)">โต๊ะ 6</button>
+</div>
+
+</div>
+
+<div class="section">
+
+<h2>👤 บิลบุคคล</h2>
+
+<input
+type="text"
+id="billName"
+placeholder="กรอกชื่อบิล">
+
+<br>
+
+<button class="start-btn" onclick="startPersonalBill()">
+เริ่มสั่งอาหาร
+</button>
+
+</div>
+
+<script>
+
+function selectTable(table){
+
+    localStorage.setItem("billType","table");
+    localStorage.setItem("tableNumber",table);
+
+    window.location.href = "menu.html";
+}
+
+function startPersonalBill(){
+
+    let name =
+    document.getElementById("billName").value.trim();
+
+    if(name === ""){
+        alert("กรุณากรอกชื่อบิล");
+        return;
+    }
+
+    localStorage.setItem("billType","person");
+    localStorage.setItem("billName",name);
+
+    window.location.href = "menu.html";
+}
+
+</script>
+
+</body>
+</html>

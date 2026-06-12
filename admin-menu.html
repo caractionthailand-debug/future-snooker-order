@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>จัดการเมนู Future Snooker</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:white;
+    padding:20px;
+}
+h1{
+    color:#00ff99;
+    text-align:center;
+}
+.box{
+    background:#222;
+    padding:15px;
+    margin:15px auto;
+    border-radius:15px;
+    max-width:800px;
+}
+input,select{
+    width:100%;
+    padding:10px;
+    margin:6px 0;
+    border:none;
+    border-radius:8px;
+    font-size:16px;
+    box-sizing:border-box;
+}
+button{
+    border:none;
+    border-radius:8px;
+    padding:10px 14px;
+    color:white;
+    cursor:pointer;
+    margin:4px;
+}
+.add-btn{background:#00c853;}
+.edit-btn{background:#2196f3;}
+.delete-btn{background:#e53935;}
+.save-btn{background:#ff9800;}
+.menu-item{
+    background:#333;
+    padding:12px;
+    margin:8px 0;
+    border-radius:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>⚙️ จัดการเมนู Future Snooker</h1>
+
+<div class="box">
+    <h2>เพิ่ม / แก้ไขเมนู</h2>
+
+    <input type="hidden" id="editIndex">
+
+    <input id="menuName" placeholder="ชื่อเมนู เช่น ข้าวผัดหมู">
+    <input id="menuPrice" type="number" placeholder="ราคา เช่น 70">
+
+    <select id="menuCategory">
+        <option value="อาหารตามสั่ง">อาหารตามสั่ง</option>
+        <option value="ของทานเล่น">ของทานเล่น</option>
+        <option value="เครื่องดื่ม">เครื่องดื่ม</option>
+    </select>
+
+    <button class="add-btn" onclick="saveMenu()">บันทึกเมนู</button>
+</div>
+
+<div class="box">
+    <h2>รายการเมนูทั้งหมด</h2>
+    <div id="menuList"></div>
+</div>
+
+<script>
+let menus = JSON.parse(localStorage.getItem("menus")) || [
+    {name:"ข้าวผัดหมู", price:70, category:"อาหารตามสั่ง"},
+    {name:"กะเพราหมู", price:70, category:"อาหารตามสั่ง"},
+    {name:"กะเพราไก่", price:70, category:"อาหารตามสั่ง"},
+    {name:"ไข่ดาว", price:15, category:"อาหารตามสั่ง"},
+    {name:"เฟรนช์ฟรายส์", price:49, category:"ของทานเล่น"},
+    {name:"นักเก็ตไก่", price:49, category:"ของทานเล่น"},
+    {name:"โค้ก", price:25, category:"เครื่องดื่ม"},
+    {name:"น้ำเปล่า", price:15, category:"เครื่องดื่ม"}
+];
+
+function saveToStorage(){
+    localStorage.setItem("menus", JSON.stringify(menus));
+}
+
+function renderMenus(){
+    let menuList = document.getElementById("menuList");
+
+    if(menus.length === 0){
+        menuList.innerHTML = "ยังไม่มีเมนู";
+        return;
+    }
+
+    let html = "";
+
+    menus.forEach(function(menu,index){
+        html += `
+        <div class="menu-item">
+            <h3>${menu.name}</h3>
+            <p>ราคา: ${menu.price} บาท</p>
+            <p>หมวด: ${menu.category}</p>
+
+            <button class="edit-btn" onclick="editMenu(${index})">แก้ไข</button>
+            <button class="delete-btn" onclick="deleteMenu(${index})">ลบ</button>
+        </div>
+        `;
+    });
+
+    menuList.innerHTML = html;
+}
+
+function saveMenu(){
+    let name = document.getElementById("menuName").value.trim();
+    let price = Number(document.getElementById("menuPrice").value);
+    let category = document.getElementById("menuCategory").value;
+    let editIndex = document.getElementById("editIndex").value;
+
+    if(name === "" || price <= 0){
+        alert("กรุณากรอกชื่อเมนูและราคา");
+        return;
+    }
+
+    let menuData = {
+        name:name,
+        price:price,
+        category:category
+    };
+
+    if(editIndex === ""){
+        menus.push(menuData);
+    }else{
+        menus[editIndex] = menuData;
+    }
+
+    saveToStorage();
+    clearForm();
+    renderMenus();
+
+    alert("บันทึกเมนูเรียบร้อย");
+}
+
+function editMenu(index){
+    document.getElementById("editIndex").value = index;
+    document.getElementById("menuName").value = menus[index].name;
+    document.getElementById("menuPrice").value = menus[index].price;
+    document.getElementById("menuCategory").value = menus[index].category;
+}
+
+function deleteMenu(index){
+    if(confirm("ต้องการลบเมนูนี้ใช่ไหม?")){
+        menus.splice(index,1);
+        saveToStorage();
+        renderMenus();
+    }
+}
+
+function clearForm(){
+    document.getElementById("editIndex").value = "";
+    document.getElementById("menuName").value = "";
+    document.getElementById("menuPrice").value = "";
+    document.getElementById("menuCategory").value = "อาหารตามสั่ง";
+}
+
+saveToStorage();
+renderMenus();
+</script>
+
+</body>
+</html>

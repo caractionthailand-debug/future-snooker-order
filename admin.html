@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Admin Orders</title>
+
+<style>
+body{
+    font-family: Arial, sans-serif;
+    background:#111;
+    color:white;
+    padding:20px;
+}
+
+h1{
+    color:#00ff99;
+    text-align:center;
+}
+
+.order{
+    background:#222;
+    padding:15px;
+    margin:15px auto;
+    border-radius:12px;
+    max-width:700px;
+    border-left:5px solid #00c853;
+}
+
+.done{
+    opacity:0.45;
+    border-left:5px solid #777;
+}
+
+button{
+    border:none;
+    border-radius:8px;
+    padding:10px 14px;
+    color:white;
+    cursor:pointer;
+    margin-top:10px;
+}
+
+.done-btn{
+    background:#2196f3;
+}
+
+.delete-btn{
+    background:#e53935;
+    margin-left:5px;
+}
+
+.clear-btn{
+    background:#ff5722;
+    width:100%;
+    max-width:700px;
+    display:block;
+    margin:20px auto;
+    font-size:18px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>📋 รายการออเดอร์ Future Snooker</h1>
+
+<div id="orderList"></div>
+
+<button class="clear-btn" onclick="clearAllOrders()">ล้างออเดอร์ทั้งหมด</button>
+
+<script>
+function loadOrders(){
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+    let orderList = document.getElementById("orderList");
+
+    if(orders.length === 0){
+        orderList.innerHTML = "<h2 style='text-align:center;'>ยังไม่มีออเดอร์</h2>";
+        return;
+    }
+
+    let html = "";
+
+    orders.forEach(function(order, index){
+        html += `
+        <div class="order ${order.done ? 'done' : ''}">
+            <h2>${order.bill}</h2>
+            <p>เวลา: ${order.time}</p>
+            <pre>${order.detail}</pre>
+            <h3>รวม ${order.total} บาท</h3>
+
+            <button class="done-btn" onclick="markDone(${index})">
+                ทำเสร็จแล้ว
+            </button>
+
+            <button class="delete-btn" onclick="deleteOrder(${index})">
+                ลบ
+            </button>
+        </div>
+        `;
+    });
+
+    orderList.innerHTML = html;
+}
+
+function markDone(index){
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+    orders[index].done = true;
+    localStorage.setItem("orders", JSON.stringify(orders));
+    loadOrders();
+}
+
+function deleteOrder(index){
+    let orders = JSON.parse(localStorage.getItem("orders")) || [];
+    orders.splice(index,1);
+    localStorage.setItem("orders", JSON.stringify(orders));
+    loadOrders();
+}
+
+function clearAllOrders(){
+    if(confirm("ต้องการล้างออเดอร์ทั้งหมดใช่ไหม?")){
+        localStorage.removeItem("orders");
+        loadOrders();
+    }
+}
+
+loadOrders();
+
+setInterval(loadOrders, 2000);
+</script>
+
+</body>
+</html>
